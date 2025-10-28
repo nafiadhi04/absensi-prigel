@@ -9,7 +9,6 @@ from flask import Flask, request, jsonify, redirect
 from deepface import DeepFace
 
 
-
 # Muat variabel environment dari file .env
 load_dotenv()
 
@@ -32,6 +31,20 @@ def get_db_connection():
     """Mendapatkan koneksi ke database MySQL."""
     conn = mysql.connector.connect(**db_config)
     return conn
+
+@app.route('/')
+def index():
+    return """
+    <h2>Form Registrasi Pengguna</h2>
+    <form action="/register" method="POST" enctype="multipart/form-data">
+        NIP: <input type="text" name="nip"><br>
+        Nama: <input type="text" name="nama_lengkap"><br>
+        Prodi: <input type="text" name="prodi"><br>
+
+        Foto: <input type="file" name="foto" accept="image/*"><br>
+        <input type="submit" value="Daftar">
+    </form>
+    """
 
 # --- API UNTUK REGISTRASI PENGGUNA ---
 @app.route('/register', methods=['POST'])
@@ -130,7 +143,7 @@ def proses_absen():
         dfs = DeepFace.find(
             img_path=temp_snapshot_path,
             db_path=db_folder,
-            model_name='VGG-Face',  # <-- PASTIKAN SAMA DENGAN SAAT REGISTRASI
+            model_name='VGG-Face',  
             enforce_detection=False # Tidak perlu deteksi wajah lagi (sudah di snapshot)
         )
         
