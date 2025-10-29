@@ -2,10 +2,10 @@ import os
 import json 
 import base64 
 import mysql.connector
+# Mengubah import untuk menyertakan render_template
+from flask import Flask, request, jsonify, redirect, render_template 
 from dotenv import load_dotenv
 from datetime import datetime
-from datetime import datetime
-from flask import Flask, request, jsonify, redirect
 from deepface import DeepFace
 
 
@@ -13,18 +13,19 @@ from deepface import DeepFace
 load_dotenv()
 
 # Inisialisasi Aplikasi Flask
+# Perlu inisialisasi di sini karena render_template memerlukannya
 app = Flask(__name__)
 
 # Konfigurasi folder upload
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Konfigurasi Database
+# Konfigurasi Database (Menggunakan Hardcoded yang sudah terbukti berhasil)
 db_config = {
-    'host': os.getenv('DB_HOST'),
-    'user': os.getenv('DB_USER'),
-    'password': os.getenv('DB_PASSWORD'),
-    'database': os.getenv('DB_NAME')
+    'host': '127.0.0.1',
+    'user': 'root',
+    'password': '',
+    'database': 'absensi_db'
 }
 
 def get_db_connection():
@@ -32,21 +33,14 @@ def get_db_connection():
     conn = mysql.connector.connect(**db_config)
     return conn
 
+## 🌐 ROUTE 1: HALAMAN REGISTRASI (FORM UTAMA)
 @app.route('/')
 def index():
-    return """
-    <h2>Form Registrasi Pengguna</h2>
-    <form action="/register" method="POST" enctype="multipart/form-data">
-        NIP: <input type="text" name="nip"><br>
-        Nama: <input type="text" name="nama_lengkap"><br>
-        Prodi: <input type="text" name="prodi"><br>
+    # Menggunakan templating: render_template memanggil file templates/register.html
+    return render_template('register.html')
 
-        Foto: <input type="file" name="foto" accept="image/*"><br>
-        <input type="submit" value="Daftar">
-    </form>
-    """
 
-# --- API UNTUK REGISTRASI PENGGUNA ---
+## 🌐 ROUTE 2: API UNTUK REGISTRASI PENGGUNA (PROSES FORM)
 @app.route('/register', methods=['POST'])
 def register_user():
     # 1. Ambil data dari form-data
@@ -62,24 +56,19 @@ def register_user():
         return jsonify({"success": False, "message": "Nama file foto kosong"}), 400
 
     # 2. Simpan file foto ke server
-    # Kita gunakan NIP sebagai nama file agar unik
     filename = f"{nip}.jpg"
     path_foto_master = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(path_foto_master)
 
     try:
         # 3. Buat embedding wajah menggunakan DeepFace
-        # Ini adalah proses AI-nya
         embedding_objs = DeepFace.represent(
             img_path=path_foto_master,
-            model_name='VGG-Face',  # Model yg umum digunakan
-            enforce_detection=True # Pastikan wajah terdeteksi
+            model_name='VGG-Face', 
+            enforce_detection=True 
         )
         
-        # Ambil vektor embedding-nya
         embedding_wajah = embedding_objs[0]['embedding']
-        
-        # Ubah list embedding menjadi string JSON untuk disimpan di DB (tipe TEXT)
         embedding_json = json.dumps(embedding_wajah)
 
         # 4. Simpan data ke database
@@ -104,8 +93,7 @@ def register_user():
         }), 201
 
     except Exception as e:
-        # Jika terjadi error (misal: wajah tidak terdeteksi oleh DeepFace)
-        # Hapus file foto yang sudah ter-upload agar tidak jadi sampah
+        # Hapus file foto jika gagal
         if os.path.exists(path_foto_master):
             os.remove(path_foto_master)
             
@@ -114,7 +102,14 @@ def register_user():
             "message": f"Registrasi gagal: {str(e)}"
         }), 500
 
-# --- API UNTUK PROSES ABSENSI ---
+## 🌐 ROUTE 3: HALAMAN ABSENSI
+@app.route('/halaman_absen')
+def halaman_absen():
+    # Menggunakan templating: render_template memanggil file templates/absen.html
+    return render_template('absen.html')
+
+
+## 🌐 ROUTE 4: API PROSES ABSENSI (DIPANGGIL DARI JAVASCRIPT DI absen.html)
 @app.route('/api/absen', methods=['POST'])
 def proses_absen():
     # 1. Ambil data gambar base64 dari frontend
@@ -122,13 +117,11 @@ def proses_absen():
     if 'image' not in data:
         return jsonify({"success": False, "message": "Tidak ada data gambar"}), 400
 
-    # 2. Decode gambar Base64
-    # Gambar base64 biasanya punya prefix 'data:image/jpeg;base64,' yg perlu dibuang
+    # 2. Decode gambar Base64 dan simpan sementara
     try:
         image_data = data['image'].split(',')[1]
         image_bytes = base64.b64decode(image_data)
         
-        # Simpan sementara snapshot untuk dianalisis
         temp_snapshot_path = "static/temp_absen.jpg"
         with open(temp_snapshot_path, 'wb') as f:
             f.write(image_bytes)
@@ -139,40 +132,32 @@ def proses_absen():
     # 3. Cari wajah di database (folder) menggunakan DeepFace.find
     db_folder = app.config['UPLOAD_FOLDER']
     try:
-        # DeepFace.find akan mencari 'temp_snapshot_path' di dalam 'db_folder'
         dfs = DeepFace.find(
             img_path=temp_snapshot_path,
             db_path=db_folder,
             model_name='VGG-Face',  
-            enforce_detection=False # Tidak perlu deteksi wajah lagi (sudah di snapshot)
+            enforce_detection=False 
         )
         
-        # Hapus file snapshot sementara
         os.remove(temp_snapshot_path)
         
         # 4. Proses Hasil Pencarian
-        # dfs (DataFrame) berisi daftar file yang cocok, diurutkan dari yg paling mirip
         if not dfs or dfs[0].empty:
             return jsonify({"success": False, "message": "Wajah tidak terdaftar"}), 404
         
-        # Ambil file yang paling cocok (baris pertama)
         matched_file_path = dfs[0]['identity'][0]
-        
-        # Ekstrak NIP dari nama file (cth: 'static/uploads/12345.jpg' -> '12345')
         filename = os.path.basename(matched_file_path)
         nip_cocok = os.path.splitext(filename)[0]
         
     except Exception as e:
-        # Error jika wajah di snapshot tidak terdeteksi
         os.remove(temp_snapshot_path)
         return jsonify({"success": False, "message": f"Wajah tidak terdeteksi di snapshot: {str(e)}"}), 400
 
     # 5. Logika Database Absensi
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True) # dictionary=True agar hasil SELECT jadi key-value
+        cursor = conn.cursor(dictionary=True) 
 
-        # Dapatkan ID pengguna dari NIP yang cocok
         cursor.execute("SELECT id FROM pengguna WHERE nip = %s", (nip_cocok,))
         pengguna = cursor.fetchone()
         
@@ -180,14 +165,10 @@ def proses_absen():
             return jsonify({"success": False, "message": "Data pengguna tidak ditemukan di DB"}), 404
         
         id_cocok = pengguna['id']
-        
-        # Dapatkan tanggal dan waktu server
         tanggal_ini = datetime.now().strftime("%Y-%m-%d")
         waktu_ini = datetime.now().strftime("%H:%M:%S")
         
-        # Ini adalah query ajaib (INSERT ... ON DUPLICATE KEY UPDATE)
-        # Jika belum ada data (pengguna_id, tanggal), ia akan INSERT (absen masuk)
-        # Jika sudah ada, ia akan UPDATE (absen pulang)
+        # Query INSERT ... ON DUPLICATE KEY UPDATE
         query_log = """
         INSERT INTO absensi (pengguna_id, tanggal, jam_berangkat)
         VALUES (%s, %s, %s)
@@ -200,12 +181,8 @@ def proses_absen():
         # 6. Ambil data lengkap untuk ditampilkan di frontend
         query_data = """
         SELECT 
-            p.nama_lengkap, 
-            p.nip, 
-            p.prodi, 
-            p.path_foto_master,
-            a.jam_berangkat, 
-            a.jam_pulang
+            p.nama_lengkap, p.nip, p.prodi, p.path_foto_master,
+            a.jam_berangkat, a.jam_pulang
         FROM 
             absensi a
         JOIN 
@@ -227,122 +204,13 @@ def proses_absen():
                 "nip": data_absen['nip'],
                 "prodi": data_absen['prodi'],
                 "foto_sebelumnya": data_absen['path_foto_master'],
-                "jam_berangkat": str(data_absen['jam_berangkat']), # Ubah ke string agar aman di JSON
+                "jam_berangkat": str(data_absen['jam_berangkat']), 
                 "jam_pulang": str(data_absen['jam_pulang']) if data_absen['jam_pulang'] else None
             }
         }), 200
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Database error: {str(e)}"}), 500
-    
-# --- HALAMAN TESTING UNTUK ABSENSI ---
-@app.route('/halaman_absen')
-def halaman_absen():
-    # Ini adalah HTML, CSS, dan JavaScript dalam satu string Python
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Halaman Absensi</title>
-        <style>
-            body { font-family: sans-serif; display: grid; place-items: center; min-height: 90vh; }
-            #container { display: flex; gap: 20px; align-items: start; }
-            #kamera_box, #hasil_box { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
-            video { width: 400px; border-radius: 8px; }
-            button { width: 100%; padding: 10px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
-            button:hover { background-color: #0056b3; }
-            #hasil { margin-top: 15px; }
-            #foto_sebelumnya { max-width: 200px; border-radius: 5px; }
-        </style>
-    </head>
-    <body>
-        <h1>Absensi Wajah</h1>
-        <div id="container">
-            <div id="kamera_box">
-                <video id="video" autoplay playsinline></video>
-                <button id="tombolAbsen">Ambil Absen</button>
-            </div>
-            <div id="hasil_box">
-                <strong>Hasil:</strong>
-                <div id="status">Silakan hadapkan wajah ke kamera...</div>
-                <div id="hasil" style="display:none;">
-                    <h3 id="hasil_nama"></h3>
-                    <p>NIP: <span id="hasil_nip"></span></p>
-                    <p>Prodi: <span id="hasil_prodi"></span></p>
-                    <p>Jam Berangkat: <span id="hasil_berangkat"></span></p>
-                    <p>Jam Pulang: <span id="hasil_pulang"></span></p>
-                    <p>Foto Referensi:</p>
-                    <img id="foto_sebelumnya" src="" alt="Foto Referensi">
-                </div>
-            </div>
-        </div>
-        <canvas id="canvas" style="display:none;"></canvas>
-
-        <script>
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const tombolAbsen = document.getElementById('tombolAbsen');
-            const statusDiv = document.getElementById('status');
-            const hasilDiv = document.getElementById('hasil');
-
-            // 1. Minta akses kamera
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    video.srcObject = stream;
-                })
-                .catch(err => {
-                    console.error("Error akses kamera: ", err);
-                    statusDiv.innerHTML = "Error: Tidak bisa mengakses kamera.";
-                });
-
-            // 2. Saat tombol diklik
-            tombolAbsen.onclick = function() {
-                statusDiv.innerHTML = "Memproses...";
-                hasilDiv.style.display = 'none';
-
-                // 3. Ambil snapshot
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // 4. Ubah snapshot ke Base64
-                const dataUrl = canvas.toDataURL('image/jpeg');
-
-                // 5. Kirim ke API Backend
-                fetch('/api/absen', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: dataUrl })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // 6. Tampilkan data jika sukses
-                        statusDiv.innerHTML = `<strong style="color:green;">${data.message}</strong>`;
-                        hasilDiv.style.display = 'block';
-                        document.getElementById('hasil_nama').innerText = data.data.nama;
-                        document.getElementById('hasil_nip').innerText = data.data.nip;
-                        document.getElementById('hasil_prodi').innerText = data.data.prodi;
-                        document.getElementById('hasil_berangkat').innerText = data.data.jam_berangkat;
-                        document.getElementById('hasil_pulang').innerText = data.data.jam_pulang || 'Belum absen pulang';
-                        // Tambahkan / di depan path agar browser tahu itu dari root
-                        document.getElementById('foto_sebelumnya').src = '/' + data.data.foto_sebelumnya; 
-                    } else {
-                        // 7. Tampilkan error jika gagal
-                        statusDiv.innerHTML = `<strong style="color:red;">Gagal: ${data.message}</strong>`;
-                        hasilDiv.style.display = 'none';
-                    }
-                })
-                .catch(err => {
-                    console.error('Error Fetch:', err);
-                    statusDiv.innerHTML = "Error komunikasi dengan server.";
-                });
-            };
-        </script>
-    </body>
-    </html>
-    """
 
 
 if __name__ == '__main__':

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrasi Pengguna - Absensi Wajah</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        input[type="text"],
+        input[type="file"] {
+            width: calc(100% - 20px);
+            padding: 12px;
+            margin: 0 auto; /* Center input */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: #f9f9f9;
+        }
+        input[type="file"] {
+            padding: 8px; /* Slightly less padding for file input */
+        }
+        input[type="submit"] {
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        input[type="submit"]:active {
+            transform: translateY(0);
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none; /* Hidden by default */
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .form-group {
+            text-align: left;
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Registrasi Pengguna</h2>
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="nip">NIP:</label>
+                <input type="text" id="nip" name="nip" required>
+            </div>
+            <div class="form-group">
+                <label for="nama_lengkap">Nama Lengkap:</label>
+                <input type="text" id="nama_lengkap" name="nama_lengkap" required>
+            </div>
+            <div class="form-group">
+                <label for="prodi">Prodi:</label>
+                <input type="text" id="prodi" name="prodi" required>
+            </div>
+            <div class="form-group">
+                <label for="foto">Foto Wajah:</label>
+                <input type="file" id="foto" name="foto" accept="image/*" required>
+            </div>
+            <button type="submit">Daftar</button>
+        </form>
+        <div id="responseMessage" class="message"></div>
+        <p style="margin-top: 25px;"><a href="/halaman_absen" style="color: #007bff; text-decoration: none;">Ke Halaman Absensi</a></p>
+    </div>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Mencegah form submit secara default
+
+            const formData = new FormData(this);
+            const responseMessage = document.getElementById('responseMessage');
+
+            responseMessage.style.display = 'none'; // Sembunyikan pesan sebelumnya
+            responseMessage.className = 'message'; // Reset kelas
+
+            fetch('/register', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                responseMessage.textContent = data.message;
+                if (data.success) {
+                    responseMessage.classList.add('success');
+                    // Opsional: reset form setelah sukses
+                    // document.getElementById('registerForm').reset();
+                } else {
+                    responseMessage.classList.add('error');
+                }
+                responseMessage.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                responseMessage.textContent = 'Terjadi kesalahan saat menghubungi server.';
+                responseMessage.classList.add('error');
+                responseMessage.style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>

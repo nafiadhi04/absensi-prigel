@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Wajah - Sistem </title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+            overflow: hidden;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+            width: 90%;
+            max-width: 1200px;
+        }
+        h1 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .card-container {
+            display: flex;
+            flex-wrap: wrap; 
+            gap: 30px;
+            width: 100%;
+            justify-content: center;
+        }
+        .card {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            flex: 1; 
+            min-width: 320px; 
+            max-width: 500px;
+            box-sizing: border-box;
+        }
+
+        /* Kamera Section */
+        .camera-section video {
+            width: 100%;
+            max-width: 400px; 
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            transform: scaleX(-1);
+        }
+        .camera-section button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 10px; /* Jarak antara tombol */
+        }
+        .camera-section #tombolAbsen {
+            background-color: #007bff;
+            color: white;
+        }
+        .camera-section #tombolAbsen:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .camera-section #tombolReset {
+            background-color: #2ecc71; /* Warna hijau untuk reset */
+            color: white;
+            display: none; /* Default tersembunyi */
+        }
+        .camera-section #tombolReset:hover {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        .camera-section button:active {
+            transform: translateY(0);
+        }
+        .camera-section .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+            min-height: 20px; 
+        }
+        .status-message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status-message.info {
+            background-color: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+
+        /* Hasil Absensi Section */
+        .result-section .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .result-section .user-info img {
+            width: 120px;
+            height: 100px;
+            border-radius: 0%;
+            object-fit: cover;
+            border: 3px solid #ffffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .result-section .user-info h3 {
+            margin: 0;
+            color: #2c3e50;
+            font-weight: 700;
+            font-size: 1.8em;
+        }
+        .result-section .user-info p {
+            margin: 0;
+            color: #555;
+            font-size: 0.95em;
+        }
+        .result-section .time-details {
+            text-align: left;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .result-section .time-details div {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px dashed #eee;
+        }
+        .result-section .time-details div:last-child {
+            border-bottom: none;
+        }
+        .result-section .time-details span {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .result-section .time-details i {
+            margin-right: 8px;
+            color: #007bff;
+        }
+        .result-section #status-overall {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .result-section #status-overall.success { color: #28a745; }
+        .result-section #status-overall.warning { color: #ffc107; }
+
+        /* Responsif */
+        @media (max-width: 768px) {
+            .card-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .card {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1>Sistem Absensi Wajah</h1>
+
+        <div class="card-container">
+            
+            <div class="card camera-section">
+                <h2><i class="fas fa-camera"></i> Ambil Snapshot</h2>
+                <video id="video" autoplay playsinline></video>
+                <button id="tombolAbsen"><i class="fas fa-fingerprint"></i> Absen Sekarang</button>
+                <button id="tombolReset"><i class="fas fa-redo"></i> Sistem Absensi</button>
+                <div id="status" class="status-message info">Menunggu deteksi wajah...</div>
+            </div>
+
+            
+            <div class="card result-section" id="hasilAbsensiCard" style="display:none;">
+                <h2><i class="fas fa-clipboard-list"></i> Data Absensi</h2>
+                <div id="status-overall" class="info"></div>
+                
+                <div class="user-info">
+                    <img id="foto_sebelumnya" src="https://via.placeholder.com/120?text=Foto" alt="Foto Referensi">
+                    <h3 id="hasil_nama"></h3>
+                    <p>NIP: <span id="hasil_nip"></span></p>
+                    <p>Prodi: <span id="hasil_prodi"></span></p>
+                </div>
+
+                <div class="time-details">
+                    <div><i class="far fa-clock"></i> Jam Berangkat: <span id="hasil_berangkat"></span></div>
+                    <div><i class="fas fa-door-open"></i> Jam Pulang: <span id="hasil_pulang"></span></div>
+                </div>
+            </div>
+        </div>
+        <p style="margin-top: 25px;"><a href="/" style="color: #007bff; text-decoration: none;">Kembali ke Registrasi</a></p>
+    </div>
+
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const tombolAbsen = document.getElementById('tombolAbsen');
+        const tombolReset = document.getElementById('tombolReset'); // Mendapatkan tombol reset
+        const statusDiv = document.getElementById('status');
+        const hasilAbsensiCard = document.getElementById('hasilAbsensiCard');
+        const statusOverallDiv = document.getElementById('status-overall');
+
+        // Fungsi untuk mengupdate status pesan
+        function updateStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message ${type}`;
+        }
+
+        // Fungsi untuk me-reset tampilan ke kondisi awal
+        function resetSystem() {
+            hasilAbsensiCard.style.display = 'none';
+            tombolReset.style.display = 'none';
+            tombolAbsen.style.display = 'block';
+            updateStatus("Kamera siap. Hadapkan wajah Anda.", 'info');
+            tombolAbsen.disabled = false;
+        }
+        
+        // 1. Minta akses kamera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                updateStatus("Kamera siap. Hadapkan wajah Anda.", 'info');
+            })
+            .catch(err => {
+                console.error("Error akses kamera: ", err);
+                updateStatus("Error: Tidak bisa mengakses kamera. Pastikan browser memiliki izin.", 'error');
+                tombolAbsen.disabled = true; 
+            });
+
+        // 2. Tombol Absen diklik
+        tombolAbsen.onclick = function() {
+            updateStatus("Memproses absensi...", 'info');
+            hasilAbsensiCard.style.display = 'none'; 
+            tombolAbsen.disabled = true; 
+            tombolReset.style.display = 'none'; // Pastikan tombol reset tersembunyi
+
+            // Ambil snapshot dan kirim ke API... (kode yang sama)
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg');
+
+            fetch('/api/absen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: dataUrl })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatus(`Sukses: ${data.message}`, 'success');
+                    
+                    // Logika Status Keseluruhan
+                    const isPulang = data.data.jam_pulang && data.data.jam_pulang !== 'Belum absen pulang';
+                    statusOverallDiv.textContent = isPulang ? "Absen Pulang Berhasil!" : "Absen Masuk Berhasil!";
+                    statusOverallDiv.className = isPulang ? 'warning' : 'success'; 
+                    
+                    hasilAbsensiCard.style.display = 'block';
+
+                    // Isi detail absensi
+                    document.getElementById('hasil_nama').innerText = data.data.nama;
+                    document.getElementById('hasil_nip').innerText = data.data.nip;
+                    document.getElementById('hasil_prodi').innerText = data.data.prodi;
+                    document.getElementById('hasil_berangkat').innerText = data.data.jam_berangkat;
+                    document.getElementById('hasil_pulang').innerText = data.data.jam_pulang || 'Belum absen pulang';
+                    document.getElementById('foto_sebelumnya').src = '/' + data.data.foto_sebelumnya; 
+                    
+                } else {
+                    updateStatus(`Gagal: ${data.message}`, 'error');
+                    hasilAbsensiCard.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error('Error Fetch:', err);
+                updateStatus("Error komunikasi dengan server.", 'error');
+                hasilAbsensiCard.style.display = 'none';
+            })
+            .finally(() => {
+                // Setelah selesai, aktifkan tombol Reset dan sembunyikan tombol Absen
+                if (hasilAbsensiCard.style.display === 'block') {
+                    tombolReset.style.display = 'block';
+                    tombolAbsen.style.display = 'none';
+                } else {
+                    // Jika gagal, aktifkan kembali tombol Absen
+                    tombolAbsen.disabled = false;
+                }
+            });
+        };
+
+        // 3. Tombol Reset diklik
+        tombolReset.onclick = function() {
+            resetSystem();
+        }
+        
+        // Panggil reset saat halaman dimuat untuk memastikan status awal
+        window.onload = resetSystem;
+    </script>
+</body>
+</html>
