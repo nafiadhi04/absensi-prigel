@@ -20,12 +20,12 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Konfigurasi Database (Menggunakan Hardcoded yang sudah terbukti berhasil)
+# Konfigurasi database MySQL menggunakan variabel environment
 db_config = {
-    'host': '127.0.0.1',
-    'user': 'root',
-    'password': '',
-    'database': 'absensi_db'
+    'host': os.getenv('DB_HOST'),
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'database': os.getenv('DB_NAME')
 }
 
 def get_db_connection():
