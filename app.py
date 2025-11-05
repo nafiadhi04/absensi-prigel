@@ -2,20 +2,42 @@ import os
 import json 
 import base64 
 import mysql.connector
-# Mengubah import untuk menyertakan render_template
+import numpy as np # Diperlukan untuk warm up
 from flask import Flask, request, jsonify, redirect, render_template 
 from dotenv import load_dotenv
 from datetime import datetime
 from deepface import DeepFace
-from flask import Response
-from fpdf import FPDF
+
 
 # Muat variabel environment dari file .env
 load_dotenv()
 
+# --- FUNGSI WARM-UP DEEPFACE ---
+def warm_up_deepface():
+    """
+    Memuat model DeepFace (VGG-Face) ke memori saat server pertama kali dijalankan.
+    Ini untuk mengatasi 'cold start' atau loading lama pada panggilan API pertama.
+    """
+    try:
+        print("INFO: Memulai Warm-Up DeepFace (Model VGG-Face)...")
+        # Membuat gambar dummy (array numpy) untuk memicu pemuatan model
+        dummy_image = np.zeros((100, 100, 3), dtype=np.uint8)
+        
+        # Menggunakan model 'VGG-Face' yang sama dengan yang digunakan di API
+        DeepFace.represent(
+            img_path=dummy_image, 
+            model_name='VGG-Face', 
+            enforce_detection=False
+        )
+        print("INFO: Warm-Up DeepFace Selesai. Model siap.")
+    except Exception as e:
+        print(f"ERROR saat Warm-Up DeepFace: {str(e)}")
+# ---------------------------------
+
+
 # Inisialisasi Aplikasi Flask
-# Perlu inisialisasi di sini karena render_template memerlukannya
-app = Flask(__name__)
+# Disesuaikan: Mendefinisikan static_folder dan static_url_path secara eksplisit untuk mengatasi 404
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
 # Konfigurasi folder upload
 UPLOAD_FOLDER = 'static/uploads'
@@ -170,7 +192,7 @@ def proses_absen():
         dfs = DeepFace.find(
             img_path=temp_snapshot_path,
             db_path=db_folder,
-            model_name='VGG-Face',  
+            model_name='VGG-Face',
             enforce_detection=False 
         )
         
@@ -179,11 +201,10 @@ def proses_absen():
 
         # 4. Proses Hasil Pencarian
         if not dfs or dfs[0].empty:
-            # Jika tidak cocok, baru hapus file temp
-            os.remove(temp_snapshot_path) 
             return jsonify({"success": False, "message": "Wajah tidak terdaftar"}), 404
         
-        matched_file_path = dfs[0]['identity'][0]
+        # Ambil path file yang paling cocok (baris pertama dari DataFrame pertama)
+        matched_file_path = dfs[0]['identity'].iloc[0]
         filename = os.path.basename(matched_file_path)
         nip_cocok = os.path.splitext(filename)[0]
 
@@ -201,10 +222,7 @@ def proses_absen():
         # -----------------------------------------------------------------
         
     except Exception as e:
-        # Jika DeepFace error, hapus file temp
-        if os.path.exists(temp_snapshot_path):
-            os.remove(temp_snapshot_path)
-        # os.remove(temp_snapshot_path) <-- BARIS INI (DI SINI) JUGA DIHAPUS
+        os.remove(temp_snapshot_path)
         return jsonify({"success": False, "message": f"Wajah tidak terdeteksi di snapshot: {str(e)}"}), 400
 
     # 5. Logika Database Absensi
@@ -351,5 +369,9 @@ if __name__ == '__main__':
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
     
+    # Panggil fungsi warm-up (memuat model) sebelum server berjalan
+    warm_up_deepface()
+    
     # Jalankan server Flask
     app.run(debug=True, port=5000)
+
