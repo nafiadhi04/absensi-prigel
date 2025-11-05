@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f9f9f9; padding: 20px; margin: 0; }
+        h1, h2 { color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* === Tombol Utama === */
+        .header-buttons {
+            margin-bottom: 20px;
+        }
+        .button-link {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer; /* Ubah jadi cursor */
+            border: none;
+            font-size: 14px;
+        }
+        .button-link:hover { background-color: #0056b3; }
+        .button-link.download {
+             background-color: #28a745;
+        }
+        .button-link.download:hover {
+             background-color: #218838;
+        }
+        
+        /* === Tabel === */
+        table {
+            width: 100%; border-collapse: collapse; margin-bottom: 30px;
+            background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; vertical-align: middle; }
+        th { background-color: #f4f4f4; }
+        tr:nth-child(even) { background-color: #fdfdfd; }
+        
+        /* Style untuk gambar foto di tabel */
+        .user-photo {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+            background-color: #eee;
+        }
+
+        /* === CSS UNTUK MODAL (POP-UP) === */
+        .modal {
+            display: none; /* Tersembunyi standar */
+            position: fixed; /* Tetap di layar */
+            z-index: 1000; /* Di atas segalanya */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Bisa di-scroll jika kecil */
+            background-color: rgba(0,0,0,0.5); /* Latar belakang hitam transparan */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            position: relative;
+        }
+        .close {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover { color: #000; }
+        
+        /* Styling form di dalam modal */
+        .modal-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .modal-form input[type="text"],
+        .modal-form input[type="file"] {
+            width: calc(100% - 22px); /* Penyesuaian padding/border */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .modal-form input[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .modal-form input[type="submit"]:hover { background-color: #218838; }
+        
+        #modalStatus { text-align: center; font-weight: bold; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+
+        <div class="header-buttons">
+            <button id="bukaModalBtn" class="button-link">Tambah Pengguna Baru</button>
+            <a href="/admin/download_pdf" class="button-link download">Download Log Absensi (PDF)</a>
+        </div>
+        
+        <h2>Daftar Pengguna Terdaftar</h2>
+        <table id="tabelPengguna">
+            <thead>
+                <tr>
+                    <th>NIP</th>
+                    <th>Nama Lengkap</th>
+                    <th>Prodi</th>
+                    <th>Foto</th> </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.nip }}</td>
+                    <td>{{ user.nama_lengkap }}</td>
+                    <td>{{ user.prodi or '-' }}</td>
+                    <td>
+                        <img src="{{ '/' + user.path_foto_master.replace('\\', '/') }}" 
+                             alt="Foto {{ user.nama_lengkap }}" 
+                             class="user-photo">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2>Log Absensi Keseluruhan</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>NIP</th>
+                    <th>Nama Lengkap</th>
+                    <th>Jam Berangkat</th>
+                    <th>Jam Pulang</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>{{ log.tanggal.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ log.nip }}</td>
+                    <td>{{ log.nama_lengkap }}</td>
+                    <td>{{ log.jam_berangkat or '-' }}</td>
+                    <td>{{ log.jam_pulang or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Registrasi Pengguna Baru</h2>
+            
+            <form id="registerForm" class="modal-form" enctype="multipart/form-data">
+                <label for="nip">NIP:</label>
+                <input type="text" name="nip" id="nip" required><br>
+                
+                <label for="nama_lengkap">Nama:</label>
+                <input type="text" name="nama_lengkap" id="nama_lengkap" required><br>
+                
+                <label for="prodi">Prodi:</label>
+                <input type="text" name="prodi" id="prodi"><br>
+                
+                <label for="foto">Foto:</label>
+                <input type="file" name="foto" id="foto" accept="image/*" required><br>
+                
+                <input type="submit" value="Daftarkan Pengguna">
+            </form>
+            
+            <div id="modalStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        // Ambil elemen-elemen modal
+        var modal = document.getElementById("myModal");
+        var btn = document.getElementById("bukaModalBtn");
+        var span = document.getElementsByClassName("close")[0];
+        var form = document.getElementById("registerForm");
+        var statusDiv = document.getElementById("modalStatus");
+
+        // Buka modal saat tombol diklik
+        btn.onclick = function() {
+            modal.style.display = "block";
+            statusDiv.innerHTML = ""; // Bersihkan status
+            form.reset(); // Bersihkan form
+        }
+
+        // Tutup modal saat 'x' diklik
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // Tutup modal saat klik di luar area modal
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // --- Logika Submit Form (AJAX/Fetch) ---
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            statusDiv.innerHTML = "Mendaftarkan...";
+            statusDiv.style.color = "blue";
+            
+            var formData = new FormData(form);
+            
+            fetch('/register', {
+                method: 'POST',
+                body: formData 
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    statusDiv.innerHTML = data.message;
+                    statusDiv.style.color = "green";
+                    
+                    setTimeout(() => {
+                        modal.style.display = "none";
+                        location.reload(); // Refresh halaman dashboard
+                    }, 2000);
+                    
+                } else {
+                    statusDiv.innerHTML = "Gagal: " + data.message;
+                    statusDiv.style.color = "red";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusDiv.innerHTML = "Error: Tidak bisa terhubung ke server.";
+                statusDiv.style.color = "red";
+            });
+        });
+    </script>
+
+</body>
+</html>

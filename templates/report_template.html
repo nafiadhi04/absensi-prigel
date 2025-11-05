@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Laporan Absensi</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 2cm;
+        }
+        body { 
+            font-family: sans-serif; 
+            font-size: 10pt;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            border-bottom: 2px solid #333;
+            padding-bottom: 5px;
+        }
+        h2 {
+            font-size: 1.1em;
+            color: #555;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #000; 
+            padding: 6px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #f0f0f0; 
+        }
+        tr:nth-child(even) { 
+            background-color: #f9f9f9; 
+        }
+    </style>
+</head>
+<body>
+    <h1>Laporan Log Absensi</h1>
+    <h2>Dicetak pada: {{ tanggal_cetak }}</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Tanggal</th>
+                <th>NIP</th>
+                <th>Nama Lengkap</th>
+                <th>Prodi</th>
+                <th>Jam Berangkat</th>
+                <th>Jam Pulang</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.tanggal.strftime('%Y-%m-%d') }}</td>
+                <td>{{ log.nip }}</td>
+                <td>{{ log.nama_lengkap }}</td>
+                <td>{{ log.prodi }}</td>
+                <td>{{ log.jam_berangkat or '-' }}</td>
+                <td>{{ log.jam_pulang or '-' }}</td>
+            </tr>
+            {% endfor %}
+            
+            {% if not logs %}
+            <tr>
+                <td colspan="6" style="text-align: center;">Tidak ada data absensi.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</body>
+</html>

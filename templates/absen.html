@@ -1,12 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absensi Wajah - Sistem </title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Absensi Wajah - Sistem</title>
+
+    <!-- Font + Icon -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- face-api -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
     <style>
+        :root { --bg:#f0f2f5; --card:#fff; --accent:#007bff; --accent-dark:#0056b3; --success:#28a745; --danger:#721c24; }
+        * { box-sizing: border-box; }
         body {
             font-family: 'Poppins', sans-serif;
             display: flex;
@@ -14,9 +22,10 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #f0f2f5;
+            background-color: var(--bg);
             color: #333;
             overflow: hidden;
+            padding: 20px;
         }
         .main-container {
             display: flex;
@@ -26,167 +35,68 @@
             width: 90%;
             max-width: 1200px;
         }
-        h1 {
-            color: #2c3e50;
-            font-weight: 700;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .card-container {
-            display: flex;
-            flex-wrap: wrap; 
-            gap: 30px;
-            width: 100%;
-            justify-content: center;
-        }
+        h1 { color: #2c3e50; font-weight: 700; margin: 0; text-align: center; }
+        .card-container { display: flex; flex-wrap: wrap; gap: 30px; width: 100%; justify-content: center; }
         .card {
-            background-color: #ffffff;
+            background-color: var(--card);
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
             text-align: center;
-            flex: 1; 
-            min-width: 320px; 
+            flex: 1;
+            min-width: 320px;
             max-width: 500px;
             box-sizing: border-box;
+            position: relative;
         }
 
-        /* Kamera Section */
+        .video-wrapper { position: relative; display: inline-block; }
+
         .camera-section video {
             width: 100%;
-            max-width: 400px; 
+            max-width: 400px;
             height: auto;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            transform: scaleX(-1);
-        }
-        .camera-section button {
-            width: 100%;
-            padding: 15px;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            margin-top: 10px; /* Jarak antara tombol */
-        }
-        .camera-section #tombolAbsen {
-            background-color: #007bff;
-            color: white;
-        }
-        .camera-section #tombolAbsen:hover {
-            background-color: #0056b3;
-            transform: translateY(-2px);
-        }
-        .camera-section #tombolReset {
-            background-color: #2ecc71; /* Warna hijau untuk reset */
-            color: white;
-            display: none; /* Default tersembunyi */
-        }
-        .camera-section #tombolReset:hover {
-            background-color: #27ae60;
-            transform: translateY(-2px);
-        }
-        
-        .camera-section button:active {
-            transform: translateY(0);
-        }
-        .camera-section .status-message {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: 500;
-            min-height: 20px; 
-        }
-        .status-message.success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .status-message.error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .status-message.info {
-            background-color: #e2e3e5;
-            color: #383d41;
-            border: 1px solid #d6d8db;
+            margin-bottom: 10px;
+            transform: scaleX(-1); /* mirror untuk preview */
+            display: block;
         }
 
-        /* Hasil Absensi Section */
-        .result-section .user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
+        /* overlay canvas menempel di video */
+        #detection_overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            transform: scaleX(-1); /* mirror canvas juga agar kotak pas */
         }
-        .result-section .user-info img {
-            width: 120px;
-            height: 100px;
-            border-radius: 0%;
-            object-fit: cover;
-            border: 3px solid #ffffffff;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        .result-section .user-info h3 {
-            margin: 0;
-            color: #2c3e50;
-            font-weight: 700;
-            font-size: 1.8em;
-        }
-        .result-section .user-info p {
-            margin: 0;
-            color: #555;
-            font-size: 0.95em;
-        }
-        .result-section .time-details {
-            text-align: left;
-            width: 100%;
-            margin-top: 20px;
-        }
-        .result-section .time-details div {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px dashed #eee;
-        }
-        .result-section .time-details div:last-child {
-            border-bottom: none;
-        }
-        .result-section .time-details span {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        .result-section .time-details i {
-            margin-right: 8px;
-            color: #007bff;
-        }
-        .result-section #status-overall {
-            font-size: 1.2em;
-            font-weight: 600;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-        .result-section #status-overall.success { color: #28a745; }
+
+        .camera-section .status-message { margin-top: 15px; padding: 10px; border-radius: 8px; font-weight: 500; min-height: 20px; }
+        .status-message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-message.info { background-color: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+
+        .result-section .user-info { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .result-section .user-info img { width: 120px; height: 100px; border-radius: 6px; object-fit: cover; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .result-section .user-info h3 { margin: 0; color: #2c3e50; font-weight: 700; font-size: 1.6em; }
+        .result-section .user-info p { margin: 0; color: #555; font-size: 0.95em; }
+        .result-section .time-details { text-align: left; width: 100%; margin-top: 20px; }
+        .result-section .time-details div { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed #eee; }
+        .result-section .time-details div:last-child { border-bottom:none; }
+        .result-section .time-details span { font-weight:600; color:#2c3e50; }
+        .result-section #status-overall { font-size:1.2em; font-weight:600; margin-bottom:15px; text-align:center; }
+        .result-section #status-overall.success { color: var(--success); }
         .result-section #status-overall.warning { color: #ffc107; }
 
-        /* Responsif */
-        @media (max-width: 768px) {
-            .card-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            .card {
-                width: 100%;
-                max-width: 400px;
-            }
+        .action-row { display:flex; gap:10px; justify-content:center; margin-top:12px; }
+        .btn { padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+        .btn.register { background:var(--accent); color:#fff; }
+        .btn.reset { background:#6c757d; color:#fff; }
+
+        @media (max-width:768px) {
+            .card-container { flex-direction: column; align-items: center; }
+            .card { width:100%; max-width:400px; }
         }
     </style>
 </head>
@@ -195,141 +105,283 @@
         <h1>Sistem Absensi Wajah</h1>
 
         <div class="card-container">
-            
             <div class="card camera-section">
-                <h2><i class="fas fa-camera"></i> Ambil Snapshot</h2>
-                <video id="video" autoplay playsinline></video>
-                <button id="tombolAbsen"><i class="fas fa-fingerprint"></i> Absen Sekarang</button>
-                <button id="tombolReset"><i class="fas fa-redo"></i> Sistem Absensi</button>
-                <div id="status" class="status-message info">Menunggu deteksi wajah...</div>
+                <h2><i class="fas fa-camera"></i> Kamera</h2>
+
+                <div class="video-wrapper">
+                    <video id="video" autoplay muted playsinline></video>
+                    <canvas id="detection_overlay" style="display:none;"></canvas>
+                </div>
+
+                <div id="status" class="status-message info">Memuat model AI...</div>
+
+                <div class="action-row" id="actionRow" style="display:none;">
+                    <button id="btnRegister" class="btn register" style="display:none;"><i class="fas fa-user-plus"></i> Daftar Wajah</button>
+                    <button id="tombolReset" class="btn reset" style="display:none;"><i class="fas fa-redo"></i> Reset Tampilan</button>
+                </div>
+
+                <p style="margin-top:12px; font-size:0.85em; color:#666;">(Sistem mendeteksi wajah otomatis — tahan 3 detik untuk absen otomatis)</p>
             </div>
 
-            
             <div class="card result-section" id="hasilAbsensiCard" style="display:none;">
                 <h2><i class="fas fa-clipboard-list"></i> Data Absensi</h2>
-                <div id="status-overall" class="info"></div>
-                
+                <div id="status-overall" class=""></div>
+
                 <div class="user-info">
                     <img id="foto_sebelumnya" src="https://via.placeholder.com/120?text=Foto" alt="Foto Referensi">
-                    <h3 id="hasil_nama"></h3>
-                    <p>NIP: <span id="hasil_nip"></span></p>
-                    <p>Prodi: <span id="hasil_prodi"></span></p>
+                    <h3 id="hasil_nama">-</h3>
+                    <p>NIP: <span id="hasil_nip">-</span></p>
+                    <p>Prodi: <span id="hasil_prodi">-</span></p>
                 </div>
 
                 <div class="time-details">
-                    <div><i class="far fa-clock"></i> Jam Berangkat: <span id="hasil_berangkat"></span></div>
-                    <div><i class="fas fa-door-open"></i> Jam Pulang: <span id="hasil_pulang"></span></div>
+                    <div><span><i class="far fa-clock"></i> Jam Berangkat</span><span id="hasil_berangkat">-</span></div>
+                    <div><span><i class="fas fa-door-open"></i> Jam Pulang</span><span id="hasil_pulang">-</span></div>
                 </div>
             </div>
         </div>
-        <p style="margin-top: 25px;"><a href="/" style="color: #007bff; text-decoration: none;">Kembali ke Registrasi</a></p>
+
+        <p style="margin-top: 10px;"><a href="/" style="color: var(--accent); text-decoration: none;">Kembali ke Registrasi</a></p>
     </div>
 
-    <canvas id="canvas" style="display:none;"></canvas>
+    <canvas id="snapshot_canvas" style="display:none;"></canvas>
 
     <script>
+        /* ====== DOM ====== */
         const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const tombolAbsen = document.getElementById('tombolAbsen');
-        const tombolReset = document.getElementById('tombolReset'); // Mendapatkan tombol reset
+        const overlay = document.getElementById('detection_overlay');
+        const snapshotCanvas = document.getElementById('snapshot_canvas');
         const statusDiv = document.getElementById('status');
         const hasilAbsensiCard = document.getElementById('hasilAbsensiCard');
         const statusOverallDiv = document.getElementById('status-overall');
+        const btnRegister = document.getElementById('btnRegister');
+        const tombolReset = document.getElementById('tombolReset');
+        const actionRow = document.getElementById('actionRow');
 
-        // Fungsi untuk mengupdate status pesan
-        function updateStatus(message, type = 'info') {
+        /* ====== Konfigurasi retry otomatis ====== */
+        let retryAttempts = 0;
+        const maxRetries = 3;            // jumlah percobaan ulang otomatis
+        const retryCooldownMs = 3000;    // jeda sebelum membolehkan percobaan ulang berikutnya (ms)
+        const MODEL_URL = '/static/models';
+
+        /* status helper */
+        function updateStatus(message, type='info') {
             statusDiv.textContent = message;
             statusDiv.className = `status-message ${type}`;
+            // tunjukkan actionRow (tombol pendaftaran/reset) ketika perlu
+            if (type === 'error' || type === 'info') {
+                actionRow.style.display = (type === 'info' || type === 'error') ? 'flex' : 'none';
+            }
         }
 
-        // Fungsi untuk me-reset tampilan ke kondisi awal
-        function resetSystem() {
-            hasilAbsensiCard.style.display = 'none';
-            tombolReset.style.display = 'none';
-            tombolAbsen.style.display = 'block';
-            updateStatus("Kamera siap. Hadapkan wajah Anda.", 'info');
-            tombolAbsen.disabled = false;
+        /* sinkron overlay -> video */
+        function resizeOverlayToVideo() {
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+                overlay.width = video.videoWidth;
+                overlay.height = video.videoHeight;
+                overlay.style.width = video.clientWidth + 'px';
+                overlay.style.height = video.clientHeight + 'px';
+                overlay.style.left = '0px';
+                overlay.style.top = '0px';
+                overlay.style.display = 'block';
+                overlay.style.transform = 'scaleX(-1)';
+                try { faceapi.matchDimensions(overlay, { width: overlay.width, height: overlay.height }); } catch(e) {}
+                return true;
+            }
+            return false;
         }
-        
-        // 1. Minta akses kamera
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-                updateStatus("Kamera siap. Hadapkan wajah Anda.", 'info');
-            })
-            .catch(err => {
-                console.error("Error akses kamera: ", err);
-                updateStatus("Error: Tidak bisa mengakses kamera. Pastikan browser memiliki izin.", 'error');
-                tombolAbsen.disabled = true; 
-            });
 
-        // 2. Tombol Absen diklik
-        tombolAbsen.onclick = function() {
-            updateStatus("Memproses absensi...", 'info');
-            hasilAbsensiCard.style.display = 'none'; 
-            tombolAbsen.disabled = true; 
-            tombolReset.style.display = 'none'; // Pastikan tombol reset tersembunyi
+        /* ambil snapshot & kirim ke server */
+        async function ambilDanKirimSnapshot() {
+            updateStatus("Mengambil snapshot...", 'info');
 
-            // Ambil snapshot dan kirim ke API... (kode yang sama)
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL('image/jpeg');
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                updateStatus("Gagal: ukuran video belum tersedia.", 'error');
+                isProcessing = false;
+                return;
+            }
 
-            fetch('/api/absen', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: dataUrl })
-            })
-            .then(response => response.json())
-            .then(data => {
+            snapshotCanvas.width = video.videoWidth;
+            snapshotCanvas.height = video.videoHeight;
+            snapshotCanvas.getContext('2d').drawImage(video, 0, 0, snapshotCanvas.width, snapshotCanvas.height);
+            const dataUrl = snapshotCanvas.toDataURL('image/jpeg', 0.9);
+
+            try {
+                const resp = await fetch('/api/absen', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: dataUrl })
+                });
+                const data = await resp.json();
+
+                // Sukses absensi normal
                 if (data.success) {
+                    retryAttempts = 0; // reset retry ketika berhasil
                     updateStatus(`Sukses: ${data.message}`, 'success');
-                    
-                    // Logika Status Keseluruhan
+
                     const isPulang = data.data.jam_pulang && data.data.jam_pulang !== 'Belum absen pulang';
                     statusOverallDiv.textContent = isPulang ? "Absen Pulang Berhasil!" : "Absen Masuk Berhasil!";
-                    statusOverallDiv.className = isPulang ? 'warning' : 'success'; 
-                    
-                    hasilAbsensiCard.style.display = 'block';
+                    statusOverallDiv.className = isPulang ? 'warning' : 'success';
 
-                    // Isi detail absensi
-                    document.getElementById('hasil_nama').innerText = data.data.nama;
-                    document.getElementById('hasil_nip').innerText = data.data.nip;
-                    document.getElementById('hasil_prodi').innerText = data.data.prodi;
-                    document.getElementById('hasil_berangkat').innerText = data.data.jam_berangkat;
+                    hasilAbsensiCard.style.display = 'block';
+                    document.getElementById('hasil_nama').innerText = data.data.nama || '-';
+                    document.getElementById('hasil_nip').innerText = data.data.nip || '-';
+                    document.getElementById('hasil_prodi').innerText = data.data.prodi || '-';
+                    document.getElementById('hasil_berangkat').innerText = data.data.jam_berangkat || '-';
                     document.getElementById('hasil_pulang').innerText = data.data.jam_pulang || 'Belum absen pulang';
-                    document.getElementById('foto_sebelumnya').src = '/' + data.data.foto_sebelumnya; 
-                    
-                } else {
-                    updateStatus(`Gagal: ${data.message}`, 'error');
-                    hasilAbsensiCard.style.display = 'none';
+                    if (data.data.foto_sebelumnya) {
+                        document.getElementById('foto_sebelumnya').src = '/' + data.data.foto_sebelumnya + '?v=' + new Date().getTime();
+                    }
+
+                    // tampilkan tombol reset (opsional)
+                    tombolReset.style.display = 'inline-block';
+                    btnRegister.style.display = 'none';
+                    actionRow.style.display = 'flex';
+                    isProcessing = false;
+                    return;
                 }
-            })
-            .catch(err => {
+
+                // Jika server menyatakan 'tidak terdaftar' -> lakukan retry otomatis
+                const notRegistered =
+                    (data.code && data.code === 'NOT_REGISTERED') ||
+                    (typeof data.message === 'string' && data.message.toLowerCase().includes('tidak terdaftar')) ||
+                    (typeof data.message === 'string' && data.message.toLowerCase().includes('not registered'));
+
+                if (notRegistered) {
+                    retryAttempts++;
+                    // jika masih di bawah maxRetries -> beri tahu user & izinkan deteksi ulang
+                    if (retryAttempts <= maxRetries) {
+                        updateStatus(`Wajah tidak terdaftar — mencoba deteksi ulang (${retryAttempts}/${maxRetries})...`, 'error');
+                        // jangan kirim request langsung lagi; biarkan loop deteksi otomatis memicu snapshot berikutnya
+                        // beri cooldown agar tidak immediate spam
+                        setTimeout(() => { isProcessing = false; updateStatus("Silakan hadapkan wajah ke kamera.", 'info'); }, retryCooldownMs);
+                        // Tunjukkan opsi pendaftaran (jika ingin)
+                        btnRegister.style.display = 'inline-block';
+                        actionRow.style.display = 'flex';
+                        return;
+                    } else {
+                        // sudah mencapai batas retry
+                        updateStatus("Wajah belum terdaftar setelah beberapa percobaan. Silakan daftar terlebih dahulu.", 'error');
+                        btnRegister.style.display = 'inline-block';
+                        tombolReset.style.display = 'inline-block';
+                        actionRow.style.display = 'flex';
+                        isProcessing = false;
+                        return;
+                    }
+                }
+
+                // Kasus gagal lain
+                updateStatus(`Gagal: ${data.message || 'Unknown error'}`, 'error');
+                btnRegister.style.display = 'inline-block';
+                tombolReset.style.display = 'inline-block';
+                actionRow.style.display = 'flex';
+                isProcessing = false;
+            } catch (err) {
                 console.error('Error Fetch:', err);
                 updateStatus("Error komunikasi dengan server.", 'error');
-                hasilAbsensiCard.style.display = 'none';
-            })
-            .finally(() => {
-                // Setelah selesai, aktifkan tombol Reset dan sembunyikan tombol Absen
-                if (hasilAbsensiCard.style.display === 'block') {
-                    tombolReset.style.display = 'block';
-                    tombolAbsen.style.display = 'none';
-                } else {
-                    // Jika gagal, aktifkan kembali tombol Absen
-                    tombolAbsen.disabled = false;
+                isProcessing = false;
+                actionRow.style.display = 'flex';
+                btnRegister.style.display = 'inline-block';
+            } finally {
+                // jika sukses (handled earlier) atau tidak, kita biarkan loop deteksi mengatur ulang isProcessing ketika perlu
+            }
+        }
+
+        /* deteksi otomatis (face-api) */
+        let isProcessing = false;
+        let timerId = null;
+        let detectionIntervalId = null;
+
+        async function startFaceDetectionAuto() {
+            updateStatus("Memuat model AI...", 'info');
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Error akses kamera:", err);
+                updateStatus("Error: Tidak bisa mengakses kamera. Pastikan izin diberikan.", 'error');
+                return;
+            }
+
+            video.addEventListener('loadedmetadata', () => { resizeOverlayToVideo(); });
+            video.addEventListener('play', () => { resizeOverlayToVideo(); });
+            window.addEventListener('resize', () => { setTimeout(resizeOverlayToVideo, 150); });
+
+            try {
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                updateStatus("Model AI berhasil dimuat.", 'info');
+            } catch (err) {
+                console.error("Gagal memuat model:", err);
+                updateStatus("Gagal memuat model AI. Cek konsol.", 'error');
+                return;
+            }
+
+            detectionIntervalId = setInterval(async () => {
+                if (video.readyState < 3 || video.videoWidth === 0 || video.videoHeight === 0) return;
+                if (!resizeOverlayToVideo()) return;
+
+                try {
+                    const detection = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options());
+                    const ctx = overlay.getContext('2d');
+                    ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+                    if (detection) {
+                        const displaySize = { width: overlay.width, height: overlay.height };
+                        if (displaySize.width === 0 || displaySize.height === 0) return;
+                        const resized = faceapi.resizeResults(detection, displaySize);
+                        faceapi.draw.drawDetections(overlay, resized);
+
+                        // Kalau sedang tidak memproses dan tidak sedang menunggu cooldown -> mulai timer tahan 5 detik
+                        if (!isProcessing) {
+                            if (!timerId) {
+                                updateStatus("Wajah terdeteksi... Tahan 3 detik...", 'info');
+                                timerId = setTimeout(() => {
+                                    // mulai proses pengambilan snapshot
+                                    isProcessing = true;
+                                    ambilDanKirimSnapshot();
+                                    timerId = null;
+                                }, 3000);
+                            }
+                        }
+                    } else {
+                        // wajah hilang -> batalkan timer jika ada
+                        if (timerId) { clearTimeout(timerId); timerId = null; if (!isProcessing) updateStatus("Wajah hilang. Silakan hadapkan lagi...", 'info'); }
+                    }
+                } catch (err) {
+                    console.error('Error during detection:', err);
                 }
-            });
+            }, 200);
+        }
+
+        /* tombol pendaftaran: arahkan ke halaman pendaftaran (ubah path sesuai backendmu) */
+        btnRegister.onclick = function() {
+            // ubah URL '/register' sesuai endpoint pendaftaran wajah di aplikasi-mu
+            window.location.href = '/register';
         };
 
-        // 3. Tombol Reset diklik
+        /* tombol reset */
         tombolReset.onclick = function() {
-            resetSystem();
-        }
-        
-        // Panggil reset saat halaman dimuat untuk memastikan status awal
-        window.onload = resetSystem;
+            hasilAbsensiCard.style.display = 'none';
+            tombolReset.style.display = 'none';
+            btnRegister.style.display = 'none';
+            actionRow.style.display = 'none';
+            retryAttempts = 0;
+            updateStatus("Kamera siap. Hadapkan wajah Anda.", 'info');
+        };
+
+        window.addEventListener('load', () => {
+            startFaceDetectionAuto();
+            actionRow.style.display = 'none';
+            updateStatus("Memuat model AI...", 'info');
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (detectionIntervalId) clearInterval(detectionIntervalId);
+            if (timerId) clearTimeout(timerId);
+            try { const s = video.srcObject; if (s) s.getTracks().forEach(t => t.stop()); } catch(e) {}
+        });
     </script>
 </body>
 </html>

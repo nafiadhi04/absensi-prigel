@@ -7,7 +7,8 @@ from flask import Flask, request, jsonify, redirect, render_template
 from dotenv import load_dotenv
 from datetime import datetime
 from deepface import DeepFace
-
+from flask import Response
+from fpdf import FPDF
 
 # Muat variabel environment dari file .env
 load_dotenv()
@@ -103,10 +104,44 @@ def register_user():
         }), 500
 
 ## 🌐 ROUTE 3: HALAMAN ABSENSI
-@app.route('/halaman_absen')
+@app.route('/halaman_absen')  # <-- UBAH INI
 def halaman_absen():
     # Menggunakan templating: render_template memanggil file templates/absen.html
     return render_template('absen.html')
+
+@app.route('/admin')
+def admin_dashboard():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True) # dictionary=True agar mudah diakses
+
+        # Query 1: Ambil semua log absensi, di-join dengan nama pengguna
+        # Diurutkan dari yang terbaru
+        query_log = """
+        SELECT 
+            p.nama_lengkap, p.nip, p.prodi,
+            a.tanggal, a.jam_berangkat, a.jam_pulang
+        FROM absensi a
+        JOIN pengguna p ON a.pengguna_id = p.id
+        ORDER BY a.tanggal DESC, a.jam_berangkat DESC;
+        """
+        cursor.execute(query_log)
+        data_absensi = cursor.fetchall()
+
+        # Query 2: Ambil semua pengguna terdaftar
+        cursor.execute("SELECT nip, nama_lengkap, prodi, path_foto_master FROM pengguna ORDER BY nama_lengkap ASC;")
+        data_pengguna = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        # Kirim kedua list data ke file HTML
+        return render_template('admin.html', 
+                            logs=data_absensi, 
+                            users=data_pengguna)
+    
+    except Exception as e:
+        return f"Terjadi error: {str(e)}", 500
 
 
 ## 🌐 ROUTE 4: API PROSES ABSENSI (DIPANGGIL DARI JAVASCRIPT DI absen.html)
@@ -139,18 +174,37 @@ def proses_absen():
             enforce_detection=False 
         )
         
-        os.remove(temp_snapshot_path)
-        
+        # MODIFIKASI: Jangan hapus file temp di sini
+        # os.remove(temp_snapshot_path) <-- BARIS INI DIHAPUS
+
         # 4. Proses Hasil Pencarian
         if not dfs or dfs[0].empty:
+            # Jika tidak cocok, baru hapus file temp
+            os.remove(temp_snapshot_path) 
             return jsonify({"success": False, "message": "Wajah tidak terdaftar"}), 404
         
         matched_file_path = dfs[0]['identity'][0]
         filename = os.path.basename(matched_file_path)
         nip_cocok = os.path.splitext(filename)[0]
+
+        # -----------------------------------------------------------------
+        # MODIFIKASI: GANTI FOTO LAMA DENGAN SNAPSHOT BARU
+        # Pindahkan file snapshot (temp_snapshot_path) untuk menimpa
+        # file foto master (matched_file_path) yang cocok.
+        try:
+            os.replace(temp_snapshot_path, matched_file_path)
+        except OSError as e:
+            # Jika gagal memindahkan file, setidaknya hapus file temp
+            if os.path.exists(temp_snapshot_path):
+                os.remove(temp_snapshot_path)
+            return jsonify({"success": False, "message": f"Gagal update foto: {str(e)}"}), 500
+        # -----------------------------------------------------------------
         
     except Exception as e:
-        os.remove(temp_snapshot_path)
+        # Jika DeepFace error, hapus file temp
+        if os.path.exists(temp_snapshot_path):
+            os.remove(temp_snapshot_path)
+        # os.remove(temp_snapshot_path) <-- BARIS INI (DI SINI) JUGA DIHAPUS
         return jsonify({"success": False, "message": f"Wajah tidak terdeteksi di snapshot: {str(e)}"}), 400
 
     # 5. Logika Database Absensi
@@ -211,6 +265,85 @@ def proses_absen():
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Database error: {str(e)}"}), 500
+    
+## 🌐 ROUTE 6: DOWNLOAD LOG ABSENSI (PDF)
+@app.route('/admin/download_pdf')
+def download_pdf():
+    try:
+        # 1. Ambil data log absensi (SAMA SEPERTI SEBELUMNYA)
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        query_log = """
+        SELECT 
+            p.nama_lengkap, p.nip, p.prodi,
+            a.tanggal, a.jam_berangkat, a.jam_pulang
+        FROM absensi a
+        JOIN pengguna p ON a.pengguna_id = p.id
+        ORDER BY a.tanggal DESC, a.jam_berangkat DESC;
+        """
+        cursor.execute(query_log)
+        data_absensi = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        
+        # 2. Buat PDF secara manual dengan FPDF2
+        pdf = FPDF(orientation='L', unit='mm', format='A4') # 'L' = Landscape
+        pdf.add_page()
+        
+        # 3. Judul
+        pdf.set_font('Arial', 'B', 16)
+        pdf.cell(0, 10, 'Laporan Log Absensi', 0, 1, 'C')
+        
+        # 4. Sub-judul (Tanggal Cetak)
+        tanggal_hari_ini = datetime.now().strftime("%d %B %Y")
+        pdf.set_font('Arial', '', 12)
+        pdf.cell(0, 10, f'Dicetak pada: {tanggal_hari_ini}', 0, 1, 'C')
+        pdf.ln(5) # Spasi
+
+        # 5. Header Tabel
+        pdf.set_font('Arial', 'B', 9)
+        pdf.set_fill_color(240, 240, 240) # Latar abu-abu
+        col_width_tanggal = 30
+        col_width_nip = 30
+        col_width_nama = 70
+        col_width_prodi = 60
+        col_width_jam = 40
+        
+        pdf.cell(col_width_tanggal, 10, 'Tanggal', 1, 0, 'C', fill=True)
+        pdf.cell(col_width_nip, 10, 'NIP', 1, 0, 'C', fill=True)
+        pdf.cell(col_width_nama, 10, 'Nama Lengkap', 1, 0, 'C', fill=True)
+        pdf.cell(col_width_prodi, 10, 'Prodi', 1, 0, 'C', fill=True)
+        pdf.cell(col_width_jam, 10, 'Jam Berangkat', 1, 0, 'C', fill=True)
+        pdf.cell(col_width_jam, 10, 'Jam Pulang', 1, 1, 'C', fill=True)
+
+        # 6. Isi Tabel (Data Log)
+        pdf.set_font('Arial', '', 9)
+        if not data_absensi:
+            pdf.cell(0, 10, 'Tidak ada data absensi.', 1, 1, 'C')
+        else:
+            for log in data_absensi:
+                pdf.cell(col_width_tanggal, 10, str(log['tanggal']), 1, 0, 'C')
+                pdf.cell(col_width_nip, 10, log['nip'], 1, 0, 'L')
+                pdf.cell(col_width_nama, 10, log['nama_lengkap'], 1, 0, 'L')
+                pdf.cell(col_width_prodi, 10, log['prodi'] or '-', 1, 0, 'L')
+                pdf.cell(col_width_jam, 10, str(log['jam_berangkat'] or '-'), 1, 0, 'C')
+                pdf.cell(col_width_jam, 10, str(log['jam_pulang'] or '-'), 1, 1, 'C')
+
+        # 7. Siapkan file PDF untuk di-download
+        pdf_output = bytes(pdf.output(dest='B'))
+        nama_file_pdf = f"Log_Absensi_{datetime.now().strftime('%Y-%m-%d')}.pdf"
+
+        # 8. Kirim file PDF sebagai respons
+        return Response(
+            pdf_output,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename={nama_file_pdf}'
+            }
+        )
+    
+    except Exception as e:
+        return f"Terjadi error saat membuat PDF: {str(e)}", 500
 
 
 if __name__ == '__main__':
