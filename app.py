@@ -3,7 +3,8 @@ import json
 import base64 
 import mysql.connector
 import numpy as np # Diperlukan untuk warm up
-from flask import Flask, request, jsonify, redirect, render_template 
+from flask import Flask, request, jsonify, redirect, render_template, Response
+from fpdf import FPDF
 from dotenv import load_dotenv
 from datetime import datetime
 from deepface import DeepFace
