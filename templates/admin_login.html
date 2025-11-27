@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Administrator - Absensi Wajah</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fas fa-user-shield"></i>
+                <h1>Login Admin</h1>
+                <p>Sistem Absensi Pengenalan Wajah</p>
+            </div>
+
+            {% if error %}
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" class="login-form">
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" name="username" placeholder="Masukkan Username" required>
+                </div>
+
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" name="password" placeholder="Masukkan Password" required>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+            </form>
+
+            <div class="footer-link">
+                <a href="/" class="btn-primary-link">
+                    <i class="fas fa-home"></i> Ke Halaman Utama
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
