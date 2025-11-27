@@ -1,39 +1,18 @@
 /* =========================================
-   1. GLOBAL & LAYOUT (Untuk Semua Halaman)
+   0. GLOBAL & DEFAULT LAYOUT
+   (Berlaku untuk semua halaman, kecuali ditimpa oleh selector spesifik)
    ========================================= */
 body {
     font-family: 'Poppins', sans-serif;
-    /* Hati-hati dengan display flex di body, ini bagus untuk absen 
-       tapi pastikan container admin menyesuaikan */
+    /* Gaya untuk menengahkan konten utama di semua halaman */
     display: flex;
     justify-content: center;
     align-items: center; 
     min-height: 100vh;
     margin: 0;
+    /* Menggunakan warna background modern */
     background-color: #f0f2f5;
     color: #333;
-}
-
-/* Container utama untuk Absen */
-.main-container {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    align-items: center;
-    width: 90%;
-    max-width: 1200px;
-    padding: 20px 0;
-}
-
-/* Container utama untuk Admin */
-.container { 
-    width: 90%;
-    max-width: 1200px; 
-    margin: 0 auto; 
-    background-color: white; /* Tambahan agar admin jelas */
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
 h1 {
@@ -46,8 +25,231 @@ h1 {
 h2 { color: #333; }
 
 /* =========================================
-   2. HALAMAN ABSEN (Kamera & Kartu)
+   1. HALAMAN UTAMA / NAVIGASI (TAMPILAN RINGKAS)
+   * Menggunakan kelas .nav-container untuk menghindari konflik dengan Admin Dashboard.
+   * Kamu HARUS menggunakan kelas ini di HTML Halaman Utama/Registrasi.
    ========================================= */
+
+body:has(.nav-container) {
+    background: linear-gradient(135deg, #e1e0e0ff, #ece7e7ff);
+    color: #000000ff;
+}
+
+.nav-container {
+    background: rgba(255, 255, 255, 0.1);
+    
+    /* 1. MENGATASI STABILITAS/LEBAR: Tambahkan padding dan perbesar max-width */
+    padding: 60px 50px; /* Padding vertikal & horizontal lebih besar */
+    max-width: 480px;   /* Ukuran Kotak Kontainer Diperbesar */
+    
+    border-radius: 15px; 
+    text-align: center;
+    -webkit-backdrop-filter: blur(12px); 
+    backdrop-filter: blur(12px); 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); 
+    width: 90%;
+    transition: transform 0.3s;
+}
+
+.nav-container:hover {
+    transform: translateY(-3px);
+}
+
+.nav-container h1 { 
+    /* 2. MEMPERBESAR TEKS: Ukuran Font Diperbesar */
+    margin-bottom: 45px; /* Margin bawah sedikit ditambah */
+    font-weight: 700;   /* Dibuat lebih tebal */
+    font-size: 34px;    /* Ukuran Judul Lebih Besar */
+    color: #020202ff;
+}
+
+.btn { 
+    /* 2. MEMPERBESAR TOMBOL: Padding dan Ukuran Font Diperbesar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px; 
+    width: 100%;
+    padding: 18px 0; /* Padding vertikal tombol diperbesar */
+    margin: 15px 0; 
+    font-size: 18px; /* Ukuran Font Tombol Diperbesar */
+    font-weight: 600;
+    border: none;
+    border-radius: 10px; 
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: #fff;
+}
+
+.btn i {
+    font-size: 22px; /* Ukuran Ikon Diperbesar */
+}
+
+/* ... (Gaya tombol warna/hover lainnya tetap di bawah ini) ... */
+
+.btn-admin {
+    background-color: #ff7675;
+    box-shadow: 0 6px 15px rgba(255, 118, 117, 0.3); 
+}
+
+.btn-admin:hover {
+    background-color: #d63031;
+    transform: translateY(-2px) scale(1.01);
+}
+
+.btn-absen {
+    background-color: #00b894;
+    box-shadow: 0 6px 15px rgba(0, 184, 148, 0.3);
+}
+
+.btn-absen:hover {
+    background-color: #019875;
+    transform: translateY(-2px) scale(1.01);
+}
+
+.button-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #fff;
+}
+
+.button-link i {
+    font-size: 22px;
+}
+
+/* =========================================
+   2. HALAMAN LOGIN ADMIN (PROFESSIONAL)
+   ========================================= */
+.login-page {
+    width: 100%;
+    max-width: 400px; 
+    padding: 20px;
+}
+
+.login-container {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.login-header h1 {
+    margin-bottom: 5px;
+    font-size: 26px;
+}
+
+.login-header i {
+    font-size: 36px;
+    color: #007bff;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.login-header p {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+
+.input-group i {
+    color: #95a5a6;
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+.input-group input {
+    flex-grow: 1;
+    border: none;
+    padding: 5px 0;
+    font-size: 16px;
+    background-color: transparent;
+    outline: none; 
+}
+
+.btn-login {
+    background-color: #007bff;
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    background-color: #0056b3;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #f5c6cb;
+    font-size: 14px;
+    text-align: left;
+}
+
+.error-message i {
+    margin-right: 8px;
+}
+
+.footer-link {
+    margin-top: 25px;
+}
+
+.btn-primary-link {
+    color: #34495e; 
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: color 0.3s ease;
+}
+
+.btn-primary-link:hover {
+    color: #007bff;
+}
+
+/* =========================================
+   3. HALAMAN ABSEN (Kamera & Kartu)
+   ========================================= */
+.main-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: center;
+    width: 90%;
+    max-width: 1200px;
+    padding: 20px 0;
+}
+
 .card-container {
     display: flex;
     flex-wrap: wrap; 
@@ -68,7 +270,6 @@ h2 { color: #333; }
     box-sizing: border-box;
 }
 
-/* Video Container */
 .video-container {
     position: relative;
     width: 100%;
@@ -86,7 +287,6 @@ h2 { color: #333; }
     transform: scaleX(-1); /* Efek Cermin */
 }
 
-/* Canvas Overlay (Kotak Deteksi) */
 #detection_overlay {
     position: absolute;
     top: 0;
@@ -96,7 +296,7 @@ h2 { color: #333; }
 }
 
 /* Tombol di Halaman Absen */
-.camera-section button, .btn {
+.camera-section button {
     width: 100%;
     padding: 15px;
     border: none;
@@ -105,15 +305,21 @@ h2 { color: #333; }
     font-weight: 600;
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    margin-top: 10px; 
 }
 
-/* Tombol Register & Reset (Action Row) */
-.action-row { display:flex; gap:10px; justify-content:center; margin-top:12px; width: 100%; }
+/* Action Row untuk tombol Reset dan Ke Utama */
+.action-row { 
+    display:flex; 
+    flex-direction: column; /* Ditumpuk Vertikal */
+    gap:10px; 
+    justify-content:center; 
+    margin-top:12px; 
+    width: 100%; 
+}
 .btn.register { background-color: #007bff; color:#fff; }
 .btn.reset { background-color: #6c757d; color:#fff; }
 
-.camera-section button:hover, .btn:hover { transform: translateY(-2px); }
+.camera-section button:hover { transform: translateY(-2px); }
 
 /* Status Message */
 .status-message {
@@ -156,8 +362,19 @@ h2 { color: #333; }
 .result-section #status-overall.warning { color: #ffc107; }
 
 /* =========================================
-   3. HALAMAN ADMIN DASHBOARD (Tambahan)
+   4. HALAMAN ADMIN DASHBOARD
    ========================================= */
+
+/* Container utama untuk Admin Dashboard (Tampilan Lebar) */
+.container { 
+    width: 90%;
+    max-width: 1200px; 
+    margin: 0 auto; 
+    background-color: white; 
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
 
 /* Tombol Header Admin */
 .header-buttons { margin-bottom: 20px; }
@@ -230,7 +447,7 @@ tr:nth-child(even) { background-color: #fdfdfd; }
     margin-bottom: 20px;
     border: 1px solid #ccc;
     border-radius: 6px;
-    box-sizing: border-box; /* Agar padding tidak melebar */
+    box-sizing: border-box; 
 }
 .modal-form input[type="submit"] {
     width: 100%;
@@ -246,8 +463,26 @@ tr:nth-child(even) { background-color: #fdfdfd; }
 .modal-form input[type="submit"]:hover { background-color: #218838; }
 #modalStatus { text-align: center; font-weight: bold; margin-bottom: 15px; }
 
+/* Tombol menuju Admin (bisa dipakai di halaman mana pun) */
+.admin-button {
+    display: inline-block;
+    padding: 10px 18px;
+    background-color: #ff5b5b;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 16px;
+    margin-top: 15px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.admin-button:hover {
+    background-color: #e04a4a;
+    transform: translateY(-2px);
+}
+
 /* =========================================
-   4. RESPONSIF (Mobile)
+   5. RESPONSIF (Mobile)
    ========================================= */
 @media (max-width: 768px) {
     .card-container { flex-direction: column; align-items: center; }

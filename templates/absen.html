@@ -35,12 +35,21 @@
                 <div id="status" class="status-message info">Memuat model AI...</div>
 
                 <!-- Tombol Aksi -->
-                <div class="action-row" id="actionRow" style="display:none;">
-                    <button id="btnRegister" class="btn register" style="display:none;"><i class="fas fa-user-plus"></i> Daftar Wajah</button>
-                    <button id="tombolReset" class="btn reset" style="display:none;"><i class="fas fa-redo"></i> Reset Tampilan</button>
-                </div>
+                <div class="action-row" id="actionRow" style="display:none; flex-direction: column; gap: 10px;">
+    <button id="btnRegister" class="btn register" style="display:none;"><i class="fas fa-user-plus"></i> Daftar Wajah</button>
+    
+    <div style="width: 100%;">
+        <button id="tombolReset" class="btn reset" style="display:none; width: 100%;"><i class="fas fa-redo"></i> Reset Tampilan</button>
+    </div>
 
-                <p style="margin-top:12px; font-size:0.85em; color:#666;">(Sistem mendeteksi wajah otomatis — tahan 3 detik untuk absen)</p>
+    <div style="width: 100%;">
+        <button id="btnKeUtama" class="btn reset" style="display:none; width: 100%;" onclick="window.location.href='/'">
+            <i class="fas fa-home"></i> Ke Halaman Utama
+        </button>
+    </div>
+</div>
+
+                <p id="keteranganDeteksi" style="margin-top:12px; font-size:0.85em; color:#666;">(Sistem mendeteksi wajah otomatis — tahan 3 detik untuk absen)</p>
             </div>
 
             <!-- KARTU HASIL -->
@@ -82,6 +91,7 @@
         const btnRegister = document.getElementById('btnRegister');
         const tombolReset = document.getElementById('tombolReset');
         const actionRow = document.getElementById('actionRow');
+        const keteranganDeteksi = document.getElementById('keteranganDeteksi');
 
         /* ====== KONFIGURASI ====== */
         let retryAttempts = 0;
@@ -192,8 +202,10 @@
                     }
 
                     tombolReset.style.display = 'inline-block';
+                    btnKeUtama.style.display = 'inline-block';
                     btnRegister.style.display = 'none';
                     actionRow.style.display = 'flex';
+                    keteranganDeteksi.style.display = 'none';
                     
                     // MATIKAN DETEKSI SETELAH SUKSES
                     detectionActive = false;
@@ -297,9 +309,14 @@
             hasilAbsensiCard.style.display = 'none';
             tombolReset.style.display = 'none';
             btnRegister.style.display = 'none';
+            btnKeUtama.style.display = 'none';
             actionRow.style.display = 'none';
             retryAttempts = 0;
             
+            // AKTIFKAN KEMBALI DETEKSI
+            detectionActive = true;
+            keteranganDeteksi.style.display = 'block';
+
             // AKTIFKAN KEMBALI DETEKSI
             detectionActive = true;
             
